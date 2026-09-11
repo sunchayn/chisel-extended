@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.2.0](https://github.com/sunchayn/chisel-extended/compare/v0.1.1...v0.2.0) (2026-09-11)
+
+
+### Added
+
+* chisel extended ([d32fe32](https://github.com/sunchayn/chisel-extended/commit/d32fe32f964b2d1a0f42fa3d4dd9ea8d143a7bfd))
+
 ## v0.1.1 - 2026-05-13
 
 ### What's Changed
