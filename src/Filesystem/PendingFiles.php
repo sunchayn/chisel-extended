@@ -56,4 +56,22 @@ class PendingFiles
 
         return $this;
     }
+
+    public function insertAfter(string $search, string $insertion): static
+    {
+        foreach ($this->paths as $path) {
+            $this->file->insertAfter($path, $search, $insertion);
+        }
+
+        return $this;
+    }
+
+    public function removeMarkdownSection(string $heading): static
+    {
+        foreach ($this->paths as $path) {
+            $this->file->removeMarkdownSection($path, $heading);
+        }
+
+        return $this;
+    }
 }

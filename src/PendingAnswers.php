@@ -84,7 +84,7 @@ class PendingAnswers implements ArrayAccess, IteratorAggregate
                 continue;
             }
 
-            if ($this->onQuestion === null) {
+            if (! $this->onQuestion instanceof Closure) {
                 throw new RuntimeException('No question handler registered. Call onQuestion() before resolving answers.');
             }
 

@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Laravel\Chisel\Ast\Visitors;
 
+use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Use_;
 use PhpParser\Node\UseItem;
 use PhpParser\NodeVisitorAbstract;
@@ -19,6 +22,10 @@ class RemoveImportVisitor extends NodeVisitorAbstract
         $this->imports = is_array($imports) ? $imports : [$imports];
     }
 
+    /**
+     * @param  array<Stmt>  $nodes  the top-level nodes.
+     * @return array<Stmt>|null the resulting top-level nodes.
+     */
     public function beforeTraverse(array $nodes): ?array
     {
         $statements = $this->getStatements($nodes);

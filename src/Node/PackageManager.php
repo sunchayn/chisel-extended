@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Laravel\Chisel\Node;
 
 enum PackageManager: string
@@ -35,6 +37,8 @@ enum PackageManager: string
      */
     public function runCommand(string $script, string ...$arguments): array
     {
+        $arguments = array_values($arguments);
+
         return match ($this) {
             self::NPM => ['npm', 'run', $script, ...($arguments === [] ? [] : ['--']), ...$arguments],
             self::YARN => ['yarn', $script, ...$arguments],
@@ -48,6 +52,8 @@ enum PackageManager: string
      */
     public function removeCommand(string ...$packages): array
     {
+        $packages = array_values($packages);
+
         return match ($this) {
             self::NPM => ['npm', 'remove', ...$packages],
             self::YARN => ['yarn', 'remove', ...$packages],

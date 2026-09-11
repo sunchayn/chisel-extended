@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Laravel\Chisel\Ast\Visitors;
 
 use PhpParser\Node;
@@ -21,11 +23,13 @@ class RemoveTraitVisitor extends NodeVisitorAbstract
         $this->traits = is_array($traits) ? $traits : [$traits];
     }
 
-    public function enterNode(Node $node): void
+    public function enterNode(Node $node): null
     {
         if ($node instanceof Class_) {
             $this->removeTraitsFromClass($node);
         }
+
+        return null;
     }
 
     protected function removeTraitsFromClass(Class_ $class): void

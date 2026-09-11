@@ -2,6 +2,10 @@
 
 namespace Laravel\Chisel\Filesystem;
 
+use FilesystemIterator;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+
 class File
 {
     public function __construct(protected string $directory)
@@ -12,11 +16,7 @@ class File
     public function delete(string ...$paths): void
     {
         foreach ($paths as $path) {
-            $fullPath = $this->directory.'/'.$path;
-
-            if (file_exists($fullPath)) {
-                unlink($fullPath);
-            }
+            $this->removePath($this->directory.'/'.$path);
         }
     }
 
@@ -49,6 +49,43 @@ class File
     public function removeSection(string $file, string $tag): void
     {
         $this->rewriteSection($file, $tag, keepContents: false);
+    }
+
+    /**
+     * Inserts a new line immediately after the first line that contains a given search string.
+     */
+    public function insertAfter(string $file, string $search, string $insertion): void
+    {
+        if (! $this->exists($file)) {
+            return;
+        }
+
+        $lines = explode("\n", $this->read($file));
+
+        foreach ($lines as $index => $line) {
+            if (str_contains($line, $search)) {
+                array_splice($lines, $index + 1, 0, [$insertion]);
+                break;
+            }
+        }
+
+        $this->write($file, implode("\n", $lines));
+    }
+
+    /**
+     * Strips a markdown heading and its section body,
+     * up to the next heading of the same or shallower level.
+     */
+    public function removeMarkdownSection(string $file, string $heading): void
+    {
+        if (! $this->exists($file)) {
+            return;
+        }
+
+        $content = $this->read($file);
+        $pattern = '/\n##+ '.preg_quote($heading, '/').'\n.*?(?=\n##+ |\z)/s';
+
+        $this->write($file, preg_replace($pattern, '', $content) ?? $content);
     }
 
     protected function rewriteSection(string $file, string $tag, bool $keepContents): void
@@ -120,7 +157,13 @@ class File
 
     protected function read(string $file): string
     {
-        return file_get_contents($this->directory.'/'.$file);
+        $contents = file_get_contents($this->directory.'/'.$file);
+
+        if ($contents === false) {
+            throw new \RuntimeException("Unable to read file: {$file}");
+        }
+
+        return $contents;
     }
 
     protected function write(string $file, string $contents): void
@@ -136,5 +179,31 @@ class File
     protected function normalizeTag(string $tag): string
     {
         return str_starts_with($tag, 'chisel-') ? $tag : 'chisel-'.$tag;
+    }
+
+    private function removePath(string $fullPath): void
+    {
+        if (! file_exists($fullPath) && ! is_link($fullPath)) {
+            return;
+        }
+
+        if (is_link($fullPath) || ! is_dir($fullPath)) {
+            unlink($fullPath);
+
+            return;
+        }
+
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($fullPath, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST,
+        );
+
+        foreach ($iterator as $item) {
+            $item->isDir() && ! $item->isLink()
+                ? rmdir($item->getPathname())
+                : unlink($item->getPathname());
+        }
+
+        rmdir($fullPath);
     }
 }

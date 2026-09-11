@@ -1,6 +1,8 @@
+/.ai               export-ignore
 /art               export-ignore
 /docs              export-ignore
 /tests             export-ignore
+/tools             export-ignore
 /scripts           export-ignore
 /.github           export-ignore
 /.php_cs           export-ignore
@@ -8,9 +10,8 @@
 .gitattributes     export-ignore
 .gitignore         export-ignore
 peck.json          export-ignore
-phpstan.neon.dist  export-ignore
-phpunit.xml.dist   export-ignore
-rector.php         export-ignore
 CHANGELOG.md       export-ignore
 CONTRIBUTING.md    export-ignore
 README.md          export-ignore
+release-please-config.json      export-ignore
+.release-please-manifest.json   export-ignore

@@ -1,5 +1,5 @@
 {
-    "name": "laravel/chisel",
+    "name": "sunchayn/chisel-extended",
     "description": "Toolkit for building scripts that remove unwanted code, files, and dependencies.",
     "keywords": [
         "laravel",
@@ -8,8 +8,14 @@
     "license": "MIT",
     "authors": [
         {
+            "name": "Mazen Touati",
+            "email": "mazen_touati@hotmail.com",
+            "role": "hard fork maintainer"
+        },
+        {
             "name": "Taylor Otwell",
-            "email": "taylor@laravel.com"
+            "email": "taylor@laravel.com",
+            "role": "original author"
         }
     ],
     "require": {
@@ -19,8 +25,8 @@
     },
     "require-dev": {
         "laravel/pint": "^1.24.0",
-        "pestphp/pest": "^4.1.0",
         "phpstan/phpstan": "^2.1.26",
+        "phpunit/phpunit": "^11.5.3",
         "rector/rector": "^2.1.7"
     },
     "autoload": {
@@ -34,24 +40,21 @@
         }
     },
     "config": {
-        "sort-packages": true,
-        "allow-plugins": {
-            "pestphp/pest-plugin": true
-        }
+        "sort-packages": true
     },
     "scripts": {
-        "lint": "pint",
-        "refactor": "rector",
-        "test:lint": "pint --test",
-        "test:unit": "pest",
-        "test:types": "phpstan",
-        "test:refactor": "rector --dry-run",
-        "test": [
-            "@test:lint",
-            "@test:unit",
-            "@test:types",
-            "@test:refactor"
-        ]
+        "post-install-cmd": [
+            "[ \"$CI\" = \"true\" ] || npx agenteq sync --yes"
+        ],
+        "post-update-cmd": [
+            "[ \"$CI\" = \"true\" ] || npx agenteq sync --yes"
+        ],
+        "phpstan": "vendor/bin/phpstan analyse -c tools/phpstan/phpstan.neon.dist",
+        "rector": "vendor/bin/rector -c tools/rector/config.php",
+        "style:fix": "vendor/bin/pint",
+        "test": "vendor/bin/phpunit -c tests/phpunit.xml.dist --testdox --colors=always",
+        "test:coverage": "@test --coverage-html ./build/coverage",
+        "test:coverage-ci": "@test --coverage-clover ./build/coverage.xml"
     },
     "minimum-stability": "dev",
     "prefer-stable": true

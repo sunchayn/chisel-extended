@@ -54,6 +54,10 @@ class Source
 
         $code = file_get_contents($this->path);
 
+        if ($code === false) {
+            return;
+        }
+
         $parser = (new ParserFactory)->createForNewestSupportedVersion();
         $oldStmts = $parser->parse($code);
         $oldTokens = $parser->getTokens();

@@ -1,18 +1,13 @@
-<p align="center">
-<a href="https://github.com/laravel/chisel/actions"><img src="https://github.com/laravel/chisel/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/chisel"><img src="https://img.shields.io/packagist/dt/laravel/chisel" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/chisel"><img src="https://img.shields.io/packagist/v/laravel/chisel" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/chisel"><img src="https://img.shields.io/packagist/l/laravel/chisel" alt="License"></a>
-</p>
+<p align="center"><a href="https://github.com/sunchayn/chisel-extended/actions"><img src="https://github.com/sunchayn/chisel-extended/workflows/tests/badge.svg" alt="Build Status"></a> <a href="https://packagist.org/packages/sunchayn/chisel-extended"><img src="https://img.shields.io/packagist/dt/sunchayn/chisel-extended" alt="Total Downloads"></a> <a href="https://packagist.org/packages/sunchayn/chisel-extended"><img src="https://img.shields.io/packagist/v/sunchayn/chisel-extended" alt="Latest Stable Version"></a> <a href="https://packagist.org/packages/sunchayn/chisel-extended"><img src="https://img.shields.io/packagist/l/sunchayn/chisel-extended" alt="License"></a></p>
 
 ## Introduction
 
-Laravel Chisel provides primitives for building post-install scripts that remove unwanted features from Laravel starter kits. Compatible starter kits include a `chisel.php` script that defines the optional features and the file mutations needed to remove them.
+Chisel Extended provides primitives for building post-install scripts that remove unwanted features from Laravel starter kits. Compatible starter kits include a `chisel.php` script that defines the optional features and the file mutations needed to remove them.
 
 ## Installation
 
 ```bash
-composer require laravel/chisel
+composer require sunchayn/chisel-extended
 ```
 
 ## Usage
@@ -144,13 +139,15 @@ class InstallFeatures extends Command
 
 `file($path)` targets a single file. `files(...$paths)` targets multiple files.
 
-| Method                            | Purpose                                            |
-| --------------------------------- | -------------------------------------------------- |
-| `replace($search, $replace)`      | Replace a string                                   |
-| `removeLinesContaining($content)` | Remove lines containing a string                   |
-| `removeSectionMarkers($tag)`      | Strip section markers, keep the content            |
-| `removeSection($tag)`             | Remove section markers and the content inside them |
-| `delete()`                        | Delete the targeted files                          |
+| Method                                | Purpose                                            |
+| -------------------------------------- | -------------------------------------------------- |
+| `replace($search, $replace)`           | Replace a string                                   |
+| `removeLinesContaining($content)`      | Remove lines containing a string                   |
+| `removeSectionMarkers($tag)`           | Strip section markers, keep the content            |
+| `removeSection($tag)`                  | Remove section markers and the content inside them |
+| `insertAfter($search, $insertion)`     | Insert a new line after the first line containing a search string |
+| `removeMarkdownSection($heading)`      | Strip a markdown heading and its section body, up to the next heading of the same or shallower level |
+| `delete()`                             | Delete the targeted files, or directories          |
 
 ## PHP File Mutations
 
@@ -171,6 +168,55 @@ class InstallFeatures extends Command
 | `npm()->remove(...$packages)`        | Remove packages using the detected package manager |
 
 The `npm()` method detects `npm`, `yarn`, `pnpm`, and `bun` automatically.
+
+## Directory and Path Operations
+
+These methods live on `Chisel` itself, rather than on `file()`/`files()`, since they take two paths or work against the root directory as a whole.
+
+| Method                                 | Purpose                                                         |
+| --------------------------------------- | ---------------------------------------------------------------- |
+| `rootDir()`                             | Get the absolute path Chisel was created with                    |
+| `relativePath($path)`                   | Resolve an absolute path to one relative to the root directory   |
+| `renamePath($from, $to)`                | Rename or move a file or directory                                |
+| `copyDirectory($source, $destination)`  | Recursively copy a directory into another location                |
+
+## Placeholder Replacement
+
+| Method                               | Purpose                                                                                  |
+| ------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `replacePlaceholders($replacements)` | Replace every key in the given array with its matching value, across every text file under the root directory |
+
+Binary files, and files under `.git`, `.idea`, `vendor`, and `node_modules`, are skipped automatically.
+
+## Running Commands
+
+| Method                              | Purpose                                                    |
+| ------------------------------------ | ------------------------------------------------------------ |
+| `runCommand($command, $cwd = null)` | Run a command and return its success state and combined output |
+
+```php
+$result = Chisel::in($directory)->runCommand(['git', 'config', 'user.name']);
+
+// $result is ['success' => bool, 'output' => string]
+```
+
+## Change Summary
+
+| Method       | Purpose                                                                            |
+| ------------- | ------------------------------------------------------------------------------------- |
+| `summary()` | Get every path modified or removed through `renamePath()`, `copyDirectory()`, and `replacePlaceholders()` |
+
+```php
+$chisel = Chisel::in($directory);
+
+$chisel->renamePath('README_PACKAGE.md', 'README.md');
+
+$chisel->summary();
+
+// ['modified_files' => ['README.md'], 'removed_paths' => ['README_PACKAGE.md']]
+```
+
+`summary()` only tracks the three methods above. Mutations made through `file()`, `files()`, `php()`, and `npm()` are not tracked, matching how those primitives already behave.
 
 ## Section Markers
 
@@ -198,16 +244,8 @@ JSX files may use block comments with braces:
 
 ## Contributing
 
-Thank you for considering contributing to Chisel! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-Please review [our security policy](https://github.com/laravel/chisel/security/policy) on how to report security vulnerabilities.
+Thank you for considering contributing to Chisel Extended! Please review our [contributing guide](.github/CONTRIBUTING.md) to get started.
 
 ## License
 
-Laravel Chisel is open-sourced software licensed under the [MIT license](LICENSE.md).
+Chisel Extended is open-sourced software licensed under the [MIT license](LICENSE.md).

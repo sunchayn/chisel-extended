@@ -16,6 +16,7 @@ class Npm
     public function install(): void
     {
         (new Factory)
+            ->newPendingProcess()
             ->path($this->directory)
             ->forever()
             ->run($this->packageManager()->installCommand())
@@ -25,6 +26,7 @@ class Npm
     public function run(string $script, string ...$arguments): void
     {
         (new Factory)
+            ->newPendingProcess()
             ->path($this->directory)
             ->forever()
             ->run($this->packageManager()->runCommand($script, ...$arguments))
@@ -34,6 +36,7 @@ class Npm
     public function remove(string ...$packages): void
     {
         (new Factory)
+            ->newPendingProcess()
             ->path($this->directory)
             ->forever()
             ->run($this->packageManager()->removeCommand(...$packages))
@@ -68,7 +71,13 @@ class Npm
             return null;
         }
 
-        $composer = json_decode(file_get_contents($composerJson), true);
+        $contents = file_get_contents($composerJson);
+
+        if ($contents === false) {
+            return null;
+        }
+
+        $composer = json_decode($contents, true);
         $scripts = $composer['scripts'] ?? null;
 
         if (! is_array($scripts)) {

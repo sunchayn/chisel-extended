@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Laravel\Chisel\Ast\Visitors;
 
 use PhpParser\Node;
@@ -20,11 +22,13 @@ class RemoveInterfaceVisitor extends NodeVisitorAbstract
         $this->interfaces = is_array($interfaces) ? $interfaces : [$interfaces];
     }
 
-    public function enterNode(Node $node): void
+    public function enterNode(Node $node): null
     {
         if ($node instanceof Class_) {
             $this->removeInterfacesFromClass($node);
         }
+
+        return null;
     }
 
     protected function removeInterfacesFromClass(Class_ $class): void
