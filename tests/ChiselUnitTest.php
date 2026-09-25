@@ -3,6 +3,7 @@
 namespace Tests;
 
 use Laravel\Chisel\Chisel;
+use Laravel\Chisel\Filesystem\PendingFiles;
 use Laravel\Chisel\Question;
 use Laravel\Chisel\Script;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -400,5 +401,24 @@ class ChiselUnitTest extends TestCase
         // Assert
 
         $this->assertEquals([Chisel::class, Chisel::class], $branches);
+    }
+
+    public function test_it_passes_safe_mode_from_a_script_to_its_mutations(): void
+    {
+        // Arrange
+
+        file_put_contents($this->tempDir.'/a.txt', 'hello');
+
+        $script = Chisel::script($this->tempDir)
+            ->safe()
+            ->apply(fn (Chisel $chisel): PendingFiles => $chisel->file('a.txt')->replace('missing', 'x'));
+
+        // Anticipate
+
+        $this->expectException(RuntimeException::class);
+
+        // Act
+
+        $script->chisel([]);
     }
 }

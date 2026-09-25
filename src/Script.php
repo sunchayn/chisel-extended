@@ -6,6 +6,8 @@ use Closure;
 
 class Script
 {
+    private bool $safe = false;
+
     /** @var array<int, Question> */
     private array $questions = [];
 
@@ -15,6 +17,13 @@ class Script
     public function __construct(private readonly string $directory)
     {
         //
+    }
+
+    public function safe(bool $safe = true): static
+    {
+        $this->safe = $safe;
+
+        return $this;
     }
 
     /**
@@ -37,7 +46,7 @@ class Script
      */
     public function chisel(array|PendingAnswers $answers): void
     {
-        $chisel = Chisel::in($this->directory);
+        $chisel = Chisel::in($this->directory)->safe($this->safe);
 
         $answers = $answers instanceof PendingAnswers ? $answers->toArray() : $answers;
 

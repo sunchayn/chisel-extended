@@ -18,7 +18,7 @@ class Source
 
     protected bool $saved = false;
 
-    public function __construct(protected string $path)
+    public function __construct(protected string $path, protected bool $safe = false)
     {
         //
     }
@@ -48,6 +48,10 @@ class Source
     {
         $this->saved = true;
 
+        if ($this->safe && ! file_exists($this->path)) {
+            throw new \RuntimeException("File does not exist: {$this->path}");
+        }
+
         if ($this->edits === [] || ! file_exists($this->path)) {
             return;
         }
@@ -74,10 +78,13 @@ class Source
 
         $newStmts = $traverser->traverse($newStmts);
 
-        file_put_contents(
-            $this->path,
-            (new Standard)->printFormatPreserving($newStmts, $oldStmts, $oldTokens),
-        );
+        $updated = (new Standard)->printFormatPreserving($newStmts, $oldStmts, $oldTokens);
+
+        if ($this->safe && $updated === $code) {
+            throw new \RuntimeException("No changes were made to {$this->path}.");
+        }
+
+        file_put_contents($this->path, $updated);
 
         $this->edits = [];
     }

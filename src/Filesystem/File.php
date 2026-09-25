@@ -8,7 +8,7 @@ use RecursiveIteratorIterator;
 
 class File
 {
-    public function __construct(protected string $directory)
+    public function __construct(protected string $directory, protected bool $safe = false)
     {
         //
     }
@@ -112,14 +112,14 @@ class File
 
             if ($keepContents) {
                 // Drop marker-only lines first, then handle inline markers.
-                $content = preg_replace('/^\h*'.$start.'\h*\R?/m', '', (string) $content);
-                $content = preg_replace('/^\h*'.$end.'\h*\R?/m', '', (string) $content);
-                $content = preg_replace('/'.$start.'\h*/', '', (string) $content);
-                $content = preg_replace('/\h*'.$end.'/', '', (string) $content);
+                $content = $this->pregReplace('/^\h*'.$start.'\h*\R?/m', '', $content);
+                $content = $this->pregReplace('/^\h*'.$end.'\h*\R?/m', '', $content);
+                $content = $this->pregReplace('/'.$start.'\h*/', '', $content);
+                $content = $this->pregReplace('/\h*'.$end.'/', '', $content);
             } else {
                 // Remove full blocks, including marker-only multi-line sections and inline sections.
-                $content = preg_replace('/^\h*'.$start.'\h*\R.*?^\h*'.$end.'\h*(?:\R|$)/ms', '', (string) $content);
-                $content = preg_replace('/'.$start.'.*?'.$end.'\h*/s', '', (string) $content);
+                $content = $this->pregReplace('/^\h*'.$start.'\h*\R.*?^\h*'.$end.'\h*(?:\R|$)/ms', '', $content);
+                $content = $this->pregReplace('/'.$start.'.*?'.$end.'\h*/s', '', $content);
             }
         }
 
@@ -168,11 +168,33 @@ class File
 
     protected function write(string $file, string $contents): void
     {
-        file_put_contents($this->directory.'/'.$file, $contents);
+        if ($this->safe && $contents === $this->read($file)) {
+            throw new \RuntimeException("No changes were made to {$file}.");
+        }
+
+        $this->ensure(file_put_contents($this->directory.'/'.$file, $contents), "Unable to write file: {$file}");
+    }
+
+    protected function ensure(mixed $result, string $message): void
+    {
+        if ($this->safe && $result === false) {
+            throw new \RuntimeException($message);
+        }
+    }
+
+    protected function pregReplace(string $pattern, string $replacement, string $subject): string
+    {
+        $result = preg_replace($pattern, $replacement, $subject);
+
+        return $result ?? throw new \RuntimeException("Regular expression failed: {$pattern}");
     }
 
     protected function exists(string $file): bool
     {
+        if ($this->safe && ! file_exists($this->directory.'/'.$file)) {
+            throw new \RuntimeException("File does not exist: {$file}");
+        }
+
         return file_exists($this->directory.'/'.$file);
     }
 
@@ -184,11 +206,15 @@ class File
     private function removePath(string $fullPath): void
     {
         if (! file_exists($fullPath) && ! is_link($fullPath)) {
+            if ($this->safe) {
+                throw new \RuntimeException("Unable to delete a path that does not exist: {$fullPath}");
+            }
+
             return;
         }
 
         if (is_link($fullPath) || ! is_dir($fullPath)) {
-            unlink($fullPath);
+            $this->ensure(unlink($fullPath), "Unable to delete: {$fullPath}");
 
             return;
         }
@@ -199,11 +225,14 @@ class File
         );
 
         foreach ($iterator as $item) {
-            $item->isDir() && ! $item->isLink()
-                ? rmdir($item->getPathname())
-                : unlink($item->getPathname());
+            $this->ensure(
+                $item->isDir() && ! $item->isLink()
+                    ? rmdir($item->getPathname())
+                    : unlink($item->getPathname()),
+                "Unable to delete: {$item->getPathname()}",
+            );
         }
 
-        rmdir($fullPath);
+        $this->ensure(rmdir($fullPath), "Unable to delete: {$fullPath}");
     }
 }

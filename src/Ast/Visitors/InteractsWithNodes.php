@@ -12,8 +12,10 @@ trait InteractsWithNodes
      */
     protected function getStatements(array $ast): array
     {
-        if (count($ast) === 1 && $ast[0] instanceof Node\Stmt\Namespace_) {
-            return $ast[0]->stmts;
+        foreach ($ast as $node) {
+            if ($node instanceof Node\Stmt\Namespace_) {
+                return $node->stmts;
+            }
         }
 
         return $ast;
@@ -26,10 +28,12 @@ trait InteractsWithNodes
      */
     protected function withStatements(array $ast, array $statements): array
     {
-        if (count($ast) === 1 && $ast[0] instanceof Node\Stmt\Namespace_) {
-            $ast[0]->stmts = $statements;
+        foreach ($ast as $node) {
+            if ($node instanceof Node\Stmt\Namespace_) {
+                $node->stmts = $statements;
 
-            return $ast;
+                return $ast;
+            }
         }
 
         return $statements;

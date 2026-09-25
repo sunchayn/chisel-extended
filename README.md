@@ -115,6 +115,7 @@ class InstallFeatures extends Command
 | Method                                     | Purpose                                          |
 | ------------------------------------------ | ------------------------------------------------ |
 | `Chisel::script($directory)`               | Create a script definition                       |
+| `safe()`                                   | Throw when a mutation yields no update            |
 | `Question::multiselect(...)`               | Define a multiselect question                    |
 | `questions([...])`                         | Set the script's questions                       |
 | `questions()`                              | Retrieve the registered questions                |
@@ -179,6 +180,23 @@ These methods live on `Chisel` itself, rather than on `file()`/`files()`, since 
 | `relativePath($path)`                   | Resolve an absolute path to one relative to the root directory   |
 | `renamePath($from, $to)`                | Rename or move a file or directory                                |
 | `copyDirectory($source, $destination)`  | Recursively copy a directory into another location                |
+
+## Safe Mode
+
+Safe mode makes an operation throw a `RuntimeException` when it yields no update. Enable it with `safe()` on `Chisel::in($directory)` or on `Chisel::script($directory)`.
+
+```php
+Chisel::in($directory)->safe()->file('composer.json')->replace('missing', 'value');
+```
+
+In safe mode, the following cases throw.
+
+* A file operation targets a file that does not exist, or leaves the file unchanged.
+* `delete()` targets a path that does not exist.
+* `renamePath()` or `copyDirectory()` receives a source that does not exist.
+* `replacePlaceholders()` is given a placeholder that matches nothing.
+* A PHP edit through `php()` leaves the file unchanged, or targets a file that does not exist.
+* A write or a delete fails at the filesystem level.
 
 ## Placeholder Replacement
 

@@ -6,6 +6,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Laravel\Chisel\Ast\Source;
 use Laravel\Chisel\Chisel;
 use PHPUnit\Framework\Attributes\CoversClass;
+use RuntimeException;
 use Tests\TestCase;
 
 #[CoversClass(Source::class)]
@@ -85,6 +86,37 @@ class SourceFunctionalTest extends TestCase
         $this->assertStringContainsString('use Baz\Qux;', $contents);
     }
 
+    public function test_it_removes_imports_from_namespaced_files_with_a_declare_statement(): void
+    {
+        // Arrange
+
+        $path = $this->tempDir.'/file.php';
+
+        file_put_contents($path, <<<'PHP'
+            <?php
+
+            declare(strict_types=1);
+
+            namespace App;
+
+            use Foo\Bar;
+            use Baz\Qux;
+
+            class X {}
+            PHP);
+
+        // Act
+
+        (new Source($path))->removeImport('Bar')->save();
+
+        // Assert
+
+        $contents = file_get_contents($path);
+
+        $this->assertStringNotContainsString('use Foo\Bar;', $contents);
+        $this->assertStringContainsString('use Baz\Qux;', $contents);
+    }
+
     public function test_it_can_save_a_php_file_with_no_queued_edits(): void
     {
         // Arrange
@@ -102,5 +134,33 @@ class SourceFunctionalTest extends TestCase
         // Assert
 
         $this->assertEquals($original, file_get_contents($path));
+    }
+
+    public function test_it_throws_in_safe_mode_when_a_php_file_does_not_exist(): void
+    {
+        // Anticipate
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('File does not exist');
+
+        // Act
+
+        Chisel::in($this->tempDir)->safe()->php('Missing.php')->removeImport('Foo\\Bar')->save();
+    }
+
+    public function test_it_throws_in_safe_mode_when_an_edit_changes_nothing(): void
+    {
+        // Arrange
+
+        file_put_contents($this->tempDir.'/User.php', "<?php\n\nclass User\n{\n}\n");
+
+        // Anticipate
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('No changes were made to');
+
+        // Act
+
+        Chisel::in($this->tempDir)->safe()->php('User.php')->removeImport('Foo\\Bar')->save();
     }
 }

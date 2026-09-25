@@ -368,4 +368,159 @@ class FileFunctionalTest extends TestCase
             ->file('js/bad.tsx')
             ->removeSectionMarkers('feat');
     }
+
+    public function test_it_throws_in_safe_mode_when_replacing_in_a_missing_file(): void
+    {
+        // Arrange
+
+        // Anticipate
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('File does not exist: a.txt');
+
+        // Act
+
+        Chisel::in($this->tempDir)->safe()->file('a.txt')->replace('a', 'b');
+    }
+
+    public function test_it_throws_in_safe_mode_when_the_replaced_content_does_not_exist(): void
+    {
+        // Arrange
+
+        file_put_contents($this->tempDir.'/a.txt', 'hello');
+
+        // Anticipate
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('No changes were made to a.txt.');
+
+        // Act
+
+        Chisel::in($this->tempDir)->safe()->file('a.txt')->replace('missing', 'x');
+    }
+
+    public function test_it_throws_in_safe_mode_when_no_line_contains_the_content(): void
+    {
+        // Arrange
+
+        file_put_contents($this->tempDir.'/a.txt', 'one\ntwo');
+
+        // Anticipate
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('No changes were made to a.txt.');
+
+        // Act
+
+        Chisel::in($this->tempDir)->safe()->file('a.txt')->removeLinesContaining('missing');
+    }
+
+    public function test_it_throws_in_safe_mode_when_the_insert_anchor_does_not_exist(): void
+    {
+        // Arrange
+
+        file_put_contents($this->tempDir.'/a.txt', 'one');
+
+        // Anticipate
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('No changes were made to a.txt.');
+
+        // Act
+
+        Chisel::in($this->tempDir)->safe()->file('a.txt')->insertAfter('missing', 'x');
+    }
+
+    public function test_it_throws_in_safe_mode_when_the_markdown_heading_does_not_exist(): void
+    {
+        // Arrange
+
+        file_put_contents($this->tempDir.'/a.md', '# Title\n\n## Other\ntext\n');
+
+        // Anticipate
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('No changes were made to a.md.');
+
+        // Act
+
+        Chisel::in($this->tempDir)->safe()->file('a.md')->removeMarkdownSection('Missing');
+    }
+
+    public function test_it_throws_in_safe_mode_when_the_section_markers_do_not_exist(): void
+    {
+        // Arrange
+
+        file_put_contents($this->tempDir.'/a.txt', 'one');
+
+        // Anticipate
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('No changes were made to a.txt.');
+
+        // Act
+
+        Chisel::in($this->tempDir)->safe()->file('a.txt')->removeSection('feat');
+    }
+
+    public function test_it_throws_in_safe_mode_when_removing_section_markers_that_do_not_exist(): void
+    {
+        // Arrange
+
+        file_put_contents($this->tempDir.'/a.txt', 'one');
+
+        // Anticipate
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('No changes were made to a.txt.');
+
+        // Act
+
+        Chisel::in($this->tempDir)->safe()->file('a.txt')->removeSectionMarkers('feat');
+    }
+
+    public function test_it_throws_in_safe_mode_when_deleting_a_missing_path(): void
+    {
+        // Arrange
+
+        // Anticipate
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Unable to delete a path that does not exist');
+
+        // Act
+
+        Chisel::in($this->tempDir)->safe()->file('missing.txt')->delete();
+    }
+
+    public function test_it_does_not_throw_outside_safe_mode_when_nothing_changes(): void
+    {
+        // Arrange
+
+        file_put_contents($this->tempDir.'/a.txt', 'hello');
+
+        // Act
+
+        Chisel::in($this->tempDir)->file('a.txt')->replace('missing', 'x');
+        Chisel::in($this->tempDir)->file('missing.txt')->replace('a', 'b');
+
+        // Assert
+
+        $this->assertEquals('hello', file_get_contents($this->tempDir.'/a.txt'));
+    }
+
+    public function test_it_applies_updates_in_safe_mode_when_something_changes(): void
+    {
+        // Arrange
+
+        file_put_contents($this->tempDir.'/a.txt', 'hello');
+
+        // Act
+
+        Chisel::in($this->tempDir)->safe()->file('a.txt')->replace('hello', 'bye');
+
+        // Assert
+
+        $this->assertEquals('bye', file_get_contents($this->tempDir.'/a.txt'));
+    }
 }

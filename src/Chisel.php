@@ -15,6 +15,8 @@ class Chisel
 {
     protected ?Npm $npm = null;
 
+    protected bool $safe = false;
+
     /** @var list<string> */
     private array $modifiedFiles = [];
 
@@ -36,6 +38,16 @@ class Chisel
         return new Script($directory);
     }
 
+    /**
+     * Makes every operation throw when it yields no update.
+     */
+    public function safe(bool $safe = true): static
+    {
+        $this->safe = $safe;
+
+        return $this;
+    }
+
     public function rootDir(): string
     {
         return $this->directory;
@@ -43,7 +55,7 @@ class Chisel
 
     public function files(string ...$paths): PendingFiles
     {
-        return new PendingFiles(new File($this->directory), $paths);
+        return new PendingFiles(new File($this->directory, $this->safe), $paths);
     }
 
     public function file(string $path): PendingFiles
@@ -58,13 +70,17 @@ class Chisel
 
     public function php(string $path): Source
     {
-        return new Source($this->path($path));
+        return new Source($this->path($path), $this->safe);
     }
 
     public function renamePath(string $from, string $to): static
     {
         $source = $this->absolutePath($from);
         $destination = $this->absolutePath($to);
+
+        if (! file_exists($source) && $this->safe) {
+            throw new \RuntimeException("Unable to rename a path that does not exist: {$from}");
+        }
 
         if (! file_exists($source) || $source === $destination) {
             return $this;
@@ -86,6 +102,10 @@ class Chisel
     {
         $source = $this->absolutePath($source);
         $destination = $this->absolutePath($destination);
+
+        if (! is_dir($source) && $this->safe) {
+            throw new \RuntimeException("Unable to copy a directory that does not exist: {$source}");
+        }
 
         if (! is_dir($source)) {
             return $this;
@@ -138,6 +158,8 @@ class Chisel
             ),
         );
 
+        $found = [];
+
         foreach ($this->textFiles() as $file) {
             $contents = file_get_contents($file);
 
@@ -147,7 +169,11 @@ class Chisel
 
             $updated = preg_replace_callback(
                 pattern: $pattern,
-                callback: fn (array $matches): string => $replacements[(string) $matches[0]],
+                callback: function (array $matches) use ($replacements, &$found): string {
+                    $found[(string) $matches[0]] = true;
+
+                    return $replacements[(string) $matches[0]];
+                },
                 subject: $contents,
             ) ?? $contents;
 
@@ -158,6 +184,12 @@ class Chisel
             file_put_contents($file, $updated);
 
             $this->trackModified($file);
+        }
+
+        $missing = array_diff(array_keys($replacements), array_keys($found));
+
+        if ($this->safe && $missing !== []) {
+            throw new \RuntimeException('Placeholders not found: '.implode(', ', $missing));
         }
     }
 
